@@ -32,4 +32,5 @@ Secondly I would then like to get the logic out of the blazor page and put it in
 Finally, exploring webkit directory to see if it is possible to just get the folder name without having to upload the folder would increase usability.
 
 The biggest issue is the all to all compairson problem that would need to be overcome if trying to parallelise to save processing time. 
+
 (Though as explained in https://eprints.qut.edu.au/87374/, doing this in an efficient manner at scale isn't exacly trivial)
