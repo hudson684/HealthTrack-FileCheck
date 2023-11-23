@@ -7,4 +7,8 @@
     <RootNamespace>HealthTrack_FileCheck</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="Interfaces\" />
+  </ItemGroup>
+
 </Project>

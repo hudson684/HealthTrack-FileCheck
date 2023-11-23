@@ -1,0 +1,173 @@
+﻿@page "/duplicate"
+
+@using HealthTrack_FileCheck.Data
+@using HealthTrack_FileCheck.Services
+@using System.Diagnostics
+@using System.IO
+@inject HashMaker hashMaker;
+
+
+<PageTitle>Duplicate Checker</PageTitle>
+
+
+@if (error)
+{
+    <p style="color:red"> @errorString</p>
+}
+
+<p> Please copy directory to scan, as modern browsers don't like getting whole folders with file input, which is sensible, but boring</p>
+<input type="text" @bind="@directory" />
+
+@if (!scanning)
+{
+    <button class="btn btn-primary" @onclick="@(async () => await ReadFiles())">Scan For Duplicates</button>
+}
+
+@if (totalCount != 0)
+{
+    <p>Current Files Checked: @currentCount</p>
+    <p>Out of Total: @totalCount</p>
+}
+
+@if (scanning)
+{
+    <p>Currently Scanning File: @currentfile </p>
+}
+
+
+@if (dataDuplicates is not null)
+{
+    foreach (var duplicateFiles in dataDuplicates)
+    {
+        <h3> Duplicate files by data </h3>
+        @foreach (var duplicateFile in duplicateFiles.Value)
+        {
+            <p>@duplicateFile.Name</p>
+        }
+    }
+}
+
+@if (nameDuplicates is not null)
+{
+    foreach (var duplicateFiles in nameDuplicates)
+    {
+        <h3> Duplicate files by name </h3>
+        @foreach (var duplicateFile in duplicateFiles.Value)
+        {
+            <p>@duplicateFile.Name</p>
+        }
+    }
+}
+
+
+
+@code {
+    private int currentCount = 0;
+    private int totalCount = 0;
+    private string directory = "";
+    private string currentfile = "";
+    bool scanning = false;
+
+    bool error = false;
+    string errorString = "";
+
+
+    private Dictionary<byte[], List<FileDetails>>? dataDuplicates;
+    private Dictionary<byte[], List<FileDetails>>? nameDuplicates;
+
+    private async Task ReadFiles()
+    {
+        error = false;
+        scanning = true;
+        currentCount = 0;
+        totalCount = 0;
+        var directoryPath = directory;
+
+        Dictionary<byte[], List<FileDetails>> fileDataBaseList = new Dictionary<byte[], List<FileDetails>>(ByteArrayComparer.Default);
+        dataDuplicates = new Dictionary<byte[], List<FileDetails>>(ByteArrayComparer.Default);
+
+        Dictionary<byte[], List<FileDetails>> fileNameBaseList = new Dictionary<byte[], List<FileDetails>>(ByteArrayComparer.Default);
+        nameDuplicates = new Dictionary<byte[], List<FileDetails>>(ByteArrayComparer.Default);
+
+        if (Directory.Exists(directoryPath))
+        {
+            var files = Directory.GetFiles(directoryPath, "*.*", SearchOption.AllDirectories);
+
+            totalCount = files.Length;
+            StateHasChanged();
+
+            foreach (string file in files)
+            {
+                //I hate this, please tell me there is a better way to change state in a technically non-async function.
+                await Task.Delay(1);
+                currentCount++;
+                currentfile = file;
+                StateHasChanged();
+                var fileName = Path.GetFileName(file);
+                var hash = hashMaker.GetHash(fileName);
+
+                var filehash = hashMaker.GetHash(File.ReadAllText(file));
+                var fileDetails = new FileDetails()
+                {
+                    Name = file,
+                    Path = directoryPath
+                };
+
+                // Check by file type
+                if (fileDataBaseList.ContainsKey(filehash))
+                {
+                    if (dataDuplicates.ContainsKey(filehash))
+                    {
+                        dataDuplicates[filehash].Add(fileDetails);
+                    }
+                    else
+                    {
+                        var filelist = fileDataBaseList[filehash];
+                        filelist.Add(fileDetails);
+                        dataDuplicates.Add(filehash, filelist);
+                    }
+                }
+                else
+                {
+                    var filelist = new List<FileDetails>
+                        {
+                            fileDetails
+                        };
+                    fileDataBaseList.Add(filehash, filelist);
+                }
+
+                // Check by file name
+                if (fileNameBaseList.ContainsKey(hash))
+                {
+                    if (nameDuplicates.ContainsKey(hash))
+                    {
+                        nameDuplicates[hash].Add(fileDetails);
+                    }
+                    else
+                    {
+                        var filelist = fileNameBaseList[hash];
+                        filelist.Add(fileDetails);
+                        nameDuplicates.Add(hash, filelist);
+                    }
+                }
+                else
+                {
+                    var filelist = new List<FileDetails>
+                        {
+                            fileDetails
+                        };
+                    fileNameBaseList.Add(hash, filelist);
+                }
+            }
+        }
+        else
+        {
+            error = true;
+            errorString = "Folder does not exist, please enter a valid folder";
+        }
+
+        scanning = false;
+    }
+
+
+}
