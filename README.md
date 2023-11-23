@@ -19,9 +19,10 @@ Duplicates checking should include by name and contents (using checksum/hash/oth
 ## How to Run
 The easiest, and prettiest method is to open the project in visual studio and run in debug mode
 
-To just run the project standalone, the release executable can be found in.
+To just run the project standalone, the release executable can be found in:
 
-{Insert your repo directory here}\HealthTrack-FileCheck\HealthTrack-FileCheck\bin\Release\net6.0
+``` {Insert your repo directory here}\HealthTrack-FileCheck\HealthTrack-FileCheck\bin\Release\net6.0```
+
 From there https:localhost:5001 will be avable to access the page (though I belive css is blocked for a local run, so it will probably be ugly)
 
 
