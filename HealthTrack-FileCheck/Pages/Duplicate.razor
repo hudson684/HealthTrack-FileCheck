@@ -1,11 +1,10 @@
-﻿@page "/duplicate"
+﻿
+@page "/duplicate"
+
 
 @using HealthTrack_FileCheck.Data
-@using HealthTrack_FileCheck.Services
-@using System.Diagnostics
-@using System.IO
-@inject HashMaker hashMaker;
-
+@using Solution.Data
+@inject DuplicateService duplicateService;
 
 <PageTitle>Duplicate Checker</PageTitle>
 
@@ -20,154 +19,51 @@
 
 @if (!scanning)
 {
-    <button class="btn btn-primary" @onclick="@(async () => await ReadFiles())">Scan For Duplicates</button>
+    <button class="btn btn-primary" @onclick="@(async () => await ReadFilesAsync())">Scan For Duplicates</button>
 }
 
-@if (totalCount != 0)
+@if (duplicates is not null)
 {
-    <p>Current Files Checked: @currentCount</p>
-    <p>Out of Total: @totalCount</p>
-}
-
-@if (scanning)
-{
-    <p>Currently Scanning File: @currentfile </p>
-}
-
-
-@if (dataDuplicates is not null)
-{
-    foreach (var duplicateFiles in dataDuplicates)
+    foreach (DuplicateGroup duplicateGroup in duplicates)
     {
-        <h3> Duplicate files by data </h3>
-        @foreach (var duplicateFile in duplicateFiles.Value)
+        @if (duplicateGroup.Duplicates is not null)
         {
-            <p>@duplicateFile.Name</p>
+            <h3> Duplicate files by @duplicateGroup.DuplicateType.ToString() </h3>
+            @foreach (var duplicateFile in duplicateGroup.Duplicates)
+            {
+                <p>@duplicateFile</p>
+            }
         }
+      
     }
 }
-
-@if (nameDuplicates is not null)
-{
-    foreach (var duplicateFiles in nameDuplicates)
-    {
-        <h3> Duplicate files by name </h3>
-        @foreach (var duplicateFile in duplicateFiles.Value)
-        {
-            <p>@duplicateFile.Name</p>
-        }
-    }
-}
-
-
 
 @code {
-    private int currentCount = 0;
-    private int totalCount = 0;
     private string directory = "";
-    private string currentfile = "";
     bool scanning = false;
 
     bool error = false;
     string errorString = "";
 
+    IEnumerable<DuplicateGroup>? duplicates;
 
-    private Dictionary<byte[], List<FileDetails>>? dataDuplicates;
-    private Dictionary<byte[], List<FileDetails>>? nameDuplicates;
-
-    private async Task ReadFiles()
+    private async Task ReadFilesAsync()
     {
-        error = false;
-        scanning = true;
-        currentCount = 0;
-        totalCount = 0;
-        var directoryPath = directory;
-
-        Dictionary<byte[], List<FileDetails>> fileDataBaseList = new Dictionary<byte[], List<FileDetails>>(ByteArrayComparer.Default);
-        dataDuplicates = new Dictionary<byte[], List<FileDetails>>(ByteArrayComparer.Default);
-
-        Dictionary<byte[], List<FileDetails>> fileNameBaseList = new Dictionary<byte[], List<FileDetails>>(ByteArrayComparer.Default);
-        nameDuplicates = new Dictionary<byte[], List<FileDetails>>(ByteArrayComparer.Default);
-
-        if (Directory.Exists(directoryPath))
+        try
         {
-            var files = Directory.GetFiles(directoryPath, "*.*", SearchOption.AllDirectories);
-
-            totalCount = files.Length;
+            scanning = true;
             StateHasChanged();
+            var duplicatesReturn = await duplicateService.GetDuplicatesAsync(directory);
 
-            foreach (string file in files)
-            {
-                //I hate this, please tell me there is a better way to change state in a technically non-async function.
-                await Task.Delay(1);
-                currentCount++;
-                currentfile = file;
-                StateHasChanged();
-                var fileName = Path.GetFileName(file);
-                var hash = hashMaker.GetHash(fileName);
-
-                var filehash = hashMaker.GetHash(File.ReadAllText(file));
-                var fileDetails = new FileDetails()
-                {
-                    Name = file,
-                    Path = directoryPath
-                };
-
-                // Check by file type
-                if (fileDataBaseList.ContainsKey(filehash))
-                {
-                    if (dataDuplicates.ContainsKey(filehash))
-                    {
-                        dataDuplicates[filehash].Add(fileDetails);
-                    }
-                    else
-                    {
-                        var filelist = fileDataBaseList[filehash];
-                        filelist.Add(fileDetails);
-                        dataDuplicates.Add(filehash, filelist);
-                    }
-                }
-                else
-                {
-                    var filelist = new List<FileDetails>
-                        {
-                            fileDetails
-                        };
-                    fileDataBaseList.Add(filehash, filelist);
-                }
-
-                // Check by file name
-                if (fileNameBaseList.ContainsKey(hash))
-                {
-                    if (nameDuplicates.ContainsKey(hash))
-                    {
-                        nameDuplicates[hash].Add(fileDetails);
-                    }
-                    else
-                    {
-                        var filelist = fileNameBaseList[hash];
-                        filelist.Add(fileDetails);
-                        nameDuplicates.Add(hash, filelist);
-                    }
-                }
-                else
-                {
-                    var filelist = new List<FileDetails>
-                        {
-                            fileDetails
-                        };
-                    fileNameBaseList.Add(hash, filelist);
-                }
-            }
+            duplicates = duplicatesReturn;
         }
-        else
+        catch (Exception ex)
         {
+            //would be replacted with a proper error handling system in the future.
             error = true;
-            errorString = "Folder does not exist, please enter a valid folder";
+            errorString = ex.Message;
         }
 
         scanning = false;
     }
-
-
 }

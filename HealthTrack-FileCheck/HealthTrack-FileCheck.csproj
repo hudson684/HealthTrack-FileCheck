@@ -11,4 +11,12 @@
     <Folder Include="Interfaces\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BackEndLibrary\Solution.Data.csproj" />
+  </ItemGroup>
+
 </Project>

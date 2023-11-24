@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Solution.Tests": {
+      "commandName": "Project",
+      "workingDirectory": "C:\\Users\\hudso\\source\\repos\\HealthTrack-FileCheck\\Solution.Tests"
+    }
+  }
+}

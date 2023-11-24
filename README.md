@@ -17,20 +17,15 @@ Duplicates checking should include by name and contents (using checksum/hash/oth
 
 
 ## How to Run
-The easiest, and prettiest method is to open the project in visual studio and run in debug mode
+The easiest, and prettiest method is to open the project in visual studio and run in debug mode.
 
-To just run the project standalone, the release executable can be found in the release.zip file in the root folder.
+Note, if the project settings have not transfered in the git upload, you will need to start both the Solution.RestAPI and the HealthTrack-FileCheck solutions.
 
-From there https:localhost:5001 will be avable to access the page 
+The hosting of the API is setup currently as https://localhost:7012, if this conflicts on your machine you will need to change both the project settings for the api project, and the injection in the healthtrack-filecheck program.cs file.
 
-(though I belive css is blocked for a local run, so it will probably be ugly)
+A very small selection of tets have been completed in the Solution.Tests folder. There is a lot to test here, but I confirmed the two positive tests of reading file and data duplicates. Further tests would include the "both" data and file itendical, plus the negative tests of confirming files that don't match shoudn't.
+
 
 
 ## Overall thoughts, Potential next steps
-One thing I was not able to solve was how to refresh the update count without faking an async, that would be my first step.
-Secondly I would then like to get the logic out of the blazor page and put it into it's own service, ideally with an interface that is injected in.
-Finally, exploring webkit directory to see if it is possible to just get the folder name without having to upload the folder would increase usability.
-
-The biggest issue is the all to all compairson problem that would need to be overcome if trying to parallelise to save processing time. 
-
-(Though as explained in https://eprints.qut.edu.au/87374/, doing this in an efficient manner at scale isn't exacly trivial)
+One thing I would like to have done was add the progress bar. This had been started with the IProgressReaderWriter interface and implimentation. The quick hacky solution would have been write to a json file the progress, with a unique guid provided on buttonclick of the process in the UI. A more sustainable solution would be to mirror the pattern followed by azure functions (a log progress tracker).
